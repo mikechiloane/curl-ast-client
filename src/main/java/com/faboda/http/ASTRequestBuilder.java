@@ -3,6 +3,7 @@ package com.faboda.http;
 import com.faboda.curl.ast.ASTNode;
 import com.faboda.curl.ast.NodeType;
 import com.google.gson.Gson;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -23,6 +24,7 @@ public class ASTRequestBuilder {
     }
     this.requestBuilder = new Request.Builder();
     this.astNode = astNode;
+
   }
 
   public void setAstNode(ASTNode astNode) {
@@ -50,6 +52,11 @@ public class ASTRequestBuilder {
     setHeaders();
     setData();
     this.request = requestBuilder.build();
+    try {
+      System.out.println(this.request.body().contentLength());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private void setHeaders() {
@@ -75,11 +82,12 @@ public class ASTRequestBuilder {
   }
 
   private void setData() {
+
     List<ASTNode> dataNodes =
         astNode.getChildren().stream()
-            .filter(node -> node.getType().equals(NodeType.DATA))
-            .map(node -> (ASTNode) node)
+            .filter(node -> node.getType().equals(NodeType.DATAPAIR))
             .toList();
+
     String encoding =
         isApplicationJsonEncoded()
             ? MediaTypes.APPLICATION_JSON.getMediaTypeValue()
@@ -94,12 +102,13 @@ public class ASTRequestBuilder {
       RequestBody requestBody = RequestBody.create(json, mediaType);
       requestBuilder.post(requestBody);
     } else {
-      RequestBody requestBody =
-          RequestBody.create(
-              data.entrySet().stream()
-                  .map(entry -> entry.getKey() + "=" + entry.getValue())
-                  .collect(Collectors.joining("&")),
-              MediaType.parse(encoding));
+      String dataString =
+          data.entrySet().stream()
+              .map(entry -> entry.getKey() + "=" + entry.getValue())
+              .collect(Collectors.joining("&"))
+              .replace("'", "");
+      System.out.println(dataString);
+      RequestBody requestBody = RequestBody.create(dataString, MediaType.parse(encoding));
       requestBuilder.post(requestBody);
     }
   }

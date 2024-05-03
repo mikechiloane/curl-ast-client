@@ -19,8 +19,9 @@ public class ASTHttpClientWrapper {
     public String send(ASTNode astNode) throws IOException {
         ASTRequestBuilder astRequestBuilder = new ASTRequestBuilder(astNode);
         astRequestBuilder.build();
-        Response response = client.newCall(astRequestBuilder.getRequest()).execute();
-        return response.body().string();
+    try (Response response = client.newCall(astRequestBuilder.getRequest()).execute()) {
+      return response.body().string();
+    }
     }
 
 
